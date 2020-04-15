@@ -11,28 +11,70 @@
 
             <div class="title-wrapper">
                 <div v-if="project.titleEdit"
-                     class="card-title card-title--view-block"
+                     class="card-title"
                 >
-                    <h3 @click="editProjectTitleToggle(project.id)">
-                        Тикет: {{ project.title }}
-                    </h3>
-                    <div class="card-title__controls">
-                        <button
-                                class="btn btn--not-done"
-                                @click="setProjectInWork(project.id)"
-                                title="В работу"
-                        ></button>
-                        <button
-                                class="btn btn--done"
-                                @click="setProjectDone(project.id)"
-                                title="Готово"
-                        ></button>
-                        <button
-                                class="btn btn--delete"
-                                @click="softDelete(project.id)"
-                                title="Удалить"
-                        >
-                        </button>
+                    <div v-if="project.senderEdit"
+                         class="card-title__view-block card-title__view-block--resend-card"
+                    >
+                        <h4>Поделиться задачей</h4>
+                        <div class="resend-block">
+                            <input
+                                    type="text"
+                                    :class="{green: exist, red: hasError}"
+                                    v-model="targetProjectName"
+                                    placeholder="Найти проект для отправки"
+                            >
+                            <div class="resend-block__controls">
+                                <button
+                                        class="btn btn--not-done"
+                                        @click="sendOriginCard(project.id)"
+                                        title="Оправить"
+                                ></button>
+                                <button
+                                        class="btn btn--done"
+                                        @click="sendCopyCard(project.id)"
+                                        title="Отправить копию"
+                                ></button>
+                                <button
+                                        class="btn btn--delete"
+                                        @click="sendCardSwitcher(project.id)"
+                                        title="Отменить"
+                                >
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else
+                         class="card-title__view-block"
+                    >
+                        <h3 @click="editProjectTitleToggle(project.id)">
+                            Тикет:<br>
+                            {{ project.title }}
+                        </h3>
+                        <div class="card-title__controls">
+                            <button
+                                    class="btn btn--not-done"
+                                    @click="setProjectInWork(project.id)"
+                                    title="В работу"
+                            ></button>
+                            <button
+                                    class="btn btn--done"
+                                    @click="setProjectDone(project.id)"
+                                    title="Готово"
+                            ></button>
+                            <button
+                                    class="btn btn--delete"
+                                    @click="softDelete(project.id)"
+                                    title="Удалить"
+                            >
+                            </button>
+                            <button
+                                    class="btn btn--send"
+                                    @click="sendCardSwitcher(project.id)"
+                                    title="Отправить задачу"
+                            >
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div v-else class="card-title card-title--input-block">
@@ -85,18 +127,48 @@
                 type: String,
                 require: false
             },
+            connection: BroadcastChannel
 
         },
         data() {
             return {
                 newProjectName: [],
                 projectInFocus: [],
-                items: null
+                items: null,
+                targetProjectName: '',
+                exist: false,
+                hasError: false
+            }
+        },
+        watch: {
+            targetProjectName() {
+                let env = this.getEnvironmentList
+                let check = env.includes(this.targetProjectName)
+                if (check && this.targetProjectName.length > 0) {
+                    this.exist = true
+                    this.hasError = false
+                } else if (!check && this.targetProjectName.length > 0) {
+                    this.hasError = true
+                    this.exist = false
+                } else {
+                    this.exist = false
+                    this.hasError = false
+                }
             }
         },
         computed: {
-            ...mapState('data', ['projectList']),
-            ...mapGetters('data', ['getProjectIndexById', 'getProjectTaskList', 'getProjectProgressList', 'getProjectProgressLength', 'getProjectTitle', 'getProjectLength','getProjectTaskListLength']),
+            ...mapState('data', ['projectList','deleteProject']),
+            ...mapGetters('data', [
+                'getProjectIndexById',
+                'getProjectTaskList',
+                'getProjectProgressList',
+                'getProjectProgressLength',
+                'getProjectTitle',
+                'getProjectLength',
+                'getProjectTaskListLength',
+                'getEnvironmentList',
+                'getProjectByIndex'
+            ])
         },
         methods: {
             getTaskList(project){
@@ -121,8 +193,6 @@
                 } else {
                     this.$store.commit('data/setProjectInArchive', {index})
                 }
-
-
             },
 
             editProjectTitleToggle(id) {
@@ -176,6 +246,51 @@
                     target.style.opacity = "0.5";
                 }, 0);
 
+            },
+
+            sendCardSwitcher(id) {
+                let index = this.getProjectIndexById(id)
+                this.$store.commit('data/editSenderEditToggle', {index})
+                this.targetProjectName = ""
+            },
+
+            sendOriginCard(id) {
+                if(!this.exist) {
+                    alert("Введите название проекта")
+                    return
+                }
+                this.sendCard(id)
+                let index = this.getProjectIndexById(id)
+                this.$store.commit('data/deleteProject',{index:index})
+
+                this.targetProjectName = ""
+                alert("Оригинал отправлен")
+            },
+
+            sendCopyCard(id) {
+                if(!this.exist) {
+                    alert("Введите название проекта")
+                    return
+                }
+                this.sendCard(id)
+
+                this.targetProjectName = ""
+                alert("Копия отправлена")
+            },
+
+            sendCard(id) {
+                let index = this.getProjectIndexById(id)
+                let targetCard = this.getProjectByIndex(index)
+                let sendigCard = {
+                    title: targetCard.title,
+                    tasksList: targetCard.tasksList,
+                    progress: targetCard.progress
+                }
+
+                this.connection.postMessage({
+                    action: 'add-task',
+                    card: JSON.stringify(sendigCard),
+                })
             }
         }
     }
@@ -190,8 +305,9 @@
     .card-title
         margin-bottom: 10px
 
-        &:hover
-            background: #fcfcfc
+        & h3:hover
+            background: #ececec
+
 
         &--input-block
             display: flex
@@ -202,11 +318,35 @@
             width: 90%
             height: 14px
 
-        &--view-block
+        &__view-block
             display: flex
             justify-content: space-between
 
+        &__view-block--resend-card
+            display: flex
+            justify-content: space-between
+            flex-direction: column
+
         &__controls
             display: flex
+            align-items: center
 
+    .resend-block
+        display: flex
+        flex-direction: row
+        justify-content: space-between
+        &____controls
+            display: flex
+            flex-direction: row
+
+    .red
+        outline: none
+        border-color: red
+        &:focus
+            border-color: red
+    .green
+        outline: none
+        border-color: #1ccc25
+        &:focus
+            border-color: #1ccc25
 </style>

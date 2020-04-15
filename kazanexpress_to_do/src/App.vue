@@ -9,7 +9,7 @@
     name: 'App',
 
     beforeCreate: function () {
-      this.$store.commit('data/initialiseStore');
+      this.$store.commit('data/initialiseStore')
     }
   }
 </script>

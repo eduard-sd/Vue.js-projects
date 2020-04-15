@@ -5,6 +5,7 @@ const state = {
         // {
         //     id: '',
         //     title: 'dcs',
+        //       titleEdit: true,
         //     tasksList: [
         //         {
         //             id: '',
@@ -14,7 +15,7 @@ const state = {
         //         }
         //     ],
         //     progress: 'Новые',
-        //     progressList: ['Новые', 'В работе', 'Готово', 'Архив']
+        //     senderEdit: false
         // }
     ],
     searchHistory: {
@@ -22,7 +23,8 @@ const state = {
         in_work: [],
         ready: [],
         archive: []
-    }
+    },
+    environmentList: []
 };
 
 const mutations = {
@@ -126,6 +128,18 @@ const mutations = {
     addNewColumnSearch(state, payload) {
         state.searchHistory[payload.list].push(payload.word)
     },
+
+    addEnviromentItem(state, payload) {
+        state.environmentList.push(payload.name)
+    },
+
+    addEnviromentItemByIndex(state, payload) {
+        state.environmentList[payload.index] = payload.name
+    },
+
+    editSenderEditToggle(state, payload) {
+        state.projectList[payload.index].senderEdit = !state.projectList[payload.index].senderEdit
+    },
 }
 
 const getters = {
@@ -135,6 +149,10 @@ const getters = {
 
     getProjectIndexById: (state) => (id) => {
         return state.projectList.findIndex(project => project.id === id)
+    },
+
+    getProjectByIndex: (state) => (index) => {
+        return state.projectList[index]
     },
 
     getProjectLength(state) {
@@ -199,6 +217,10 @@ const getters = {
 
     getSearchListArchive(state) {
         return state.searchHistory.archive.slice(-5)
+    },
+
+    getEnvironmentList(state) {
+        return state.environmentList
     }
 };
 

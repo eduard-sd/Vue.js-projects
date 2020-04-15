@@ -210,7 +210,7 @@
         word-break: break-word
 
         &:hover
-            background: #fcfcfc
+            background: #ececec
 
     &__text--done
         color: darkgray

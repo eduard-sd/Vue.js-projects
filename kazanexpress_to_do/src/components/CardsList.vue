@@ -62,6 +62,7 @@
                     :searchText="searchText"
                     :value="value"
                     :id="value"
+                    :connection="connection"
             />
         </ul>
         <div v-if="value === 'Новые'">
@@ -110,7 +111,8 @@
                 type: String,
                 require: true
             },
-            index: Number
+            index: Number,
+            connection: BroadcastChannel
         },
         data() {
             return {
@@ -145,7 +147,8 @@
                     title: this.newTitleProject !== null ? this.newTitleProject : "Без имени",
                     titleEdit: true,
                     tasksList: [],
-                    progress: 'Новые'
+                    progress: 'Новые',
+                    senderEdit: false
                 }
                 this.$store.commit('data/addNewProject', project)
                 this.newTitleProject = null

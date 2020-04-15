@@ -7,7 +7,7 @@
             <div v-if="!titleIsEditing"
                  class="project-title"
             >
-                <h1 @click="editMainTitle(mainProjectTitle)">
+                <h1 @click="titleSwitcher()">
                     Название проекта: {{ mainProjectTitle }}
                 </h1>
             </div>
@@ -37,6 +37,7 @@
                     :key="index"
                     :value="value"
                     :index="index"
+                    :connection="connection"
             />
         </div>
     </div>
@@ -50,7 +51,6 @@
 
     export default {
         name: "Board",
-
         components: {
             CardsList,
             Import,
@@ -62,32 +62,86 @@
                 columnList: ['Новые', 'В работе', 'Готово', 'Архив'],
                 mainProjectTitle: '',
                 titleIsEditing: true,
-                fileText: ''
+                fileText: '',
+                connection: new BroadcastChannel('thechannel')
             }
         },
 
         computed: {
-            ...mapGetters('data', ['getMainTitle']),
+            ...mapGetters('data', ['getMainTitle','getLastProjectId','getEnvironmentList']),
         },
 
         created() {
             this.restoreMainProjectTitle()
+
+            this.connection.onmessage = event => {
+                let message = event.data
+                if (message.action === "add-environment") {
+                    let env = this.getEnvironmentList
+                    let index = env.findIndex(title => title === message.previousTitle)
+                    if(index === -1) {
+                        this.$store.commit('data/addEnviromentItem', {name:message.projectName})
+                    } else {
+                        this.$store.commit('data/addEnviromentItemByIndex', {index, name:message.projectName})
+                    }
+
+                } else if (message.action === "add-task") {
+                    let card = JSON.parse(message.card)
+                    let project = {
+                        id: this.getLastProjectId,
+                        title: card.title,
+                        titleEdit: true,
+                        tasksList: card.tasksList,
+                        progress: card.progress,
+                        senderEdit: false
+                    }
+
+                    this.$store.commit('data/addNewProject', project)
+                    this.$store.commit('data/setLastProjectId')
+                }
+            }
+
+            if (this.mainProjectTitle.length > 0) {
+                this.connection.postMessage({
+                    action: 'add-environment',
+                    projectName: this.mainProjectTitle,
+                    previousTitle: ''
+                })
+            }
+
         },
 
         watch: {
             fileText() {
                 this.$store.commit('data/loadFileToStore', {file:this.fileText})
                 this.restoreMainProjectTitle()
-            }
+            },
         },
 
         methods: {
-            editMainTitle() {
+            titleSwitcher() {
                 this.titleIsEditing = !this.titleIsEditing
                 if (this.mainProjectTitle.length === 0) this.titleIsEditing = true
+
                 if (this.mainProjectTitle) {
                     this.$nextTick(() => this.$refs.mainTitle.focus())
+                }
+            },
+
+            editMainTitle() {
+                this.titleSwitcher()
+
+                if (this.mainProjectTitle.length >= 0) {
+
+                    this.connection.postMessage({
+                        action: 'add-environment',
+                        projectName: this.mainProjectTitle,
+                        previousTitle: this.getMainTitle
+                    })
+
                     this.$store.commit('data/setMainTitle', {mainTitle: this.mainProjectTitle})
+                    // this.$store.commit('data/setPreviousMainTitle', {name: this.mainProjectTitle})
+
                 }
             },
             restoreMainProjectTitle() {
@@ -109,6 +163,7 @@
                     this.$store.commit('data/setProjectProgress', {index:card_id, progress: progress})
                 }
             }
+
         }
     }
 </script>
