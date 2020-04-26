@@ -11,39 +11,39 @@
 </template>
 
 <script>
-    import { bus } from '../store/bus.js'
 
-    export default {
-        name: "SearchFilter",
-        props: {
-            index: Number
+export default {
+    name: 'SearchFilter',
+    props: {
+        index: Number,
+        lastSearchedText: String,
+    },
+    data() {
+        return {
+            searchText: '',
+        };
+    },
+
+    watch: {
+        searchText(text) {
+            this.$emit('searchText', text);
         },
-        data() {
-            return {
-                searchText: ''
+    },
+
+    created() {
+        this.$parent.$on('searchLast', (data) => {
+            this.searchText = data.word;
+        });
+    },
+
+    methods: {
+        searchBlur(event) {
+            if (this.searchText[this.index]) {
+                this.$emit('searchBlur', event);
             }
         },
-
-        watch: {
-            searchText(text) {
-                this.$emit("searchText", text)
-            }
-        },
-
-        created() {
-            bus.$on("searchLast", (data)=> {
-                this.searchText = data.word
-            })
-        },
-
-        methods: {
-            searchBlur(event) {
-                if(this.searchText[this.index]) {
-                    this.$emit("searchBlur", event)
-                }
-            }
-        }
-    }
+    },
+};
 </script>
 
 <style scoped lang="sass">

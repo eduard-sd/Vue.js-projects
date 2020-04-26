@@ -44,128 +44,124 @@
 </template>
 
 <script>
-    import CardsList from '@/components/CardsList'
-    import Import from '@/components/Import'
-    import Export from '@/components/Export'
-    import {mapGetters} from "vuex";
+import CardsList from '@/components/CardsList';
+import Import from '@/components/Import';
+import Export from '@/components/Export';
+import { mapGetters } from 'vuex';
 
-    export default {
-        name: "Board",
-        components: {
-            CardsList,
-            Import,
-            Export
-        },
+export default {
+    name: 'Board',
+    components: {
+        CardsList,
+        Import,
+        Export,
+    },
 
-        data() {
-            return {
-                columnList: ['Новые', 'В работе', 'Готово', 'Архив'],
-                mainProjectTitle: '',
-                titleIsEditing: true,
-                fileText: '',
-                connection: new BroadcastChannel('thechannel')
-            }
-        },
+    data() {
+        return {
+            columnList: ['Новые', 'В работе', 'Готово', 'Архив'],
+            mainProjectTitle: '',
+            titleIsEditing: true,
+            fileText: '',
+            connection: new BroadcastChannel('thechannel'),
+        };
+    },
 
-        computed: {
-            ...mapGetters('data', ['getMainTitle','getLastProjectId','getEnvironmentList']),
-        },
+    computed: {
+        ...mapGetters('data', ['getMainTitle', 'getLastProjectId', 'getEnvironmentList']),
+    },
 
-        created() {
-            this.restoreMainProjectTitle()
+    created() {
+        this.restoreMainProjectTitle();
 
-            this.connection.onmessage = event => {
-                let message = event.data
-                if (message.action === "add-environment") {
-                    let env = this.getEnvironmentList
-                    let index = env.findIndex(title => title === message.previousTitle)
-                    if(index === -1) {
-                        this.$store.commit('data/addEnviromentItem', {name:message.projectName})
-                    } else {
-                        this.$store.commit('data/addEnviromentItemByIndex', {index, name:message.projectName})
-                    }
-
-                } else if (message.action === "add-task") {
-                    let card = JSON.parse(message.card)
-                    let project = {
-                        id: this.getLastProjectId,
-                        title: card.title,
-                        titleEdit: true,
-                        tasksList: card.tasksList,
-                        progress: card.progress,
-                        senderEdit: false
-                    }
-
-                    this.$store.commit('data/addNewProject', project)
-                    this.$store.commit('data/setLastProjectId')
+        this.connection.onmessage = (event) => {
+            const message = event.data;
+            if (message.action === 'add-environment') {
+                const env = this.getEnvironmentList;
+                const index = env.findIndex((title) => title === message.previousTitle);
+                if (index === -1) {
+                    this.$store.commit('data/addEnviromentItem', { name: message.projectName });
+                } else {
+                    this.$store.commit('data/addEnviromentItemByIndex', { index, name: message.projectName });
                 }
-            }
+            } else if (message.action === 'add-task') {
+                const card = JSON.parse(message.card);
+                const project = {
+                    id: this.getLastProjectId,
+                    title: card.title,
+                    titleEdit: true,
+                    tasksList: card.tasksList,
+                    progress: card.progress,
+                    senderEdit: false,
+                };
 
-            if (this.mainProjectTitle.length > 0) {
+                this.$store.commit('data/addNewProject', project);
+                this.$store.commit('data/setLastProjectId');
+            }
+        };
+
+        if (this.mainProjectTitle.length > 0) {
+            this.connection.postMessage({
+                action: 'add-environment',
+                projectName: this.mainProjectTitle,
+                previousTitle: '',
+            });
+        }
+    },
+
+    watch: {
+        fileText() {
+            this.$store.commit('data/loadFileToStore', { file: this.fileText });
+            this.restoreMainProjectTitle();
+        },
+    },
+
+    methods: {
+        titleSwitcher() {
+            this.titleIsEditing = !this.titleIsEditing;
+            if (this.mainProjectTitle.length === 0) this.titleIsEditing = true;
+
+            if (this.mainProjectTitle) {
+                this.$nextTick(() => this.$refs.mainTitle.focus());
+                // this.$refs.mainTitle.focus();
+            }
+        },
+
+        editMainTitle() {
+            this.titleSwitcher();
+
+            if (this.mainProjectTitle.length >= 0) {
                 this.connection.postMessage({
                     action: 'add-environment',
                     projectName: this.mainProjectTitle,
-                    previousTitle: ''
-                })
-            }
+                    previousTitle: this.getMainTitle,
+                });
 
+                this.$store.commit('data/setMainTitle', { mainTitle: this.mainProjectTitle });
+            }
+        },
+        restoreMainProjectTitle() {
+            const mainTitle = this.getMainTitle;
+            if (mainTitle) {
+                this.mainProjectTitle = mainTitle;
+                this.titleIsEditing = false;
+            }
+        },
+        drop(e) {
+            const cardId = e.dataTransfer.getData('card_id');
+            const card = document.getElementById(cardId);
+            card.style.opacity = '1';
+
+            const cardList = e.target.closest('.cards-list');
+            if (cardList) {
+                const wrapper = cardList.querySelector('.card-wrapper');
+                const progress = wrapper.id;
+                this.$store.commit('data/setProjectProgress', { index: cardId, progress });
+            }
         },
 
-        watch: {
-            fileText() {
-                this.$store.commit('data/loadFileToStore', {file:this.fileText})
-                this.restoreMainProjectTitle()
-            },
-        },
-
-        methods: {
-            titleSwitcher() {
-                this.titleIsEditing = !this.titleIsEditing
-                if (this.mainProjectTitle.length === 0) this.titleIsEditing = true
-
-                if (this.mainProjectTitle) {
-                    this.$nextTick(() => this.$refs.mainTitle.focus())
-                }
-            },
-
-            editMainTitle() {
-                this.titleSwitcher()
-
-                if (this.mainProjectTitle.length >= 0) {
-
-                    this.connection.postMessage({
-                        action: 'add-environment',
-                        projectName: this.mainProjectTitle,
-                        previousTitle: this.getMainTitle
-                    })
-
-                    this.$store.commit('data/setMainTitle', {mainTitle: this.mainProjectTitle})
-                    // this.$store.commit('data/setPreviousMainTitle', {name: this.mainProjectTitle})
-
-                }
-            },
-            restoreMainProjectTitle() {
-                let mainTitle = this.getMainTitle
-                if (mainTitle) {
-                    this.mainProjectTitle = mainTitle
-                    this.titleIsEditing = false
-                }
-            },
-            drop(e) {
-                let card_id = e.dataTransfer.getData("card_id")
-                let card = document.getElementById(card_id)
-                card.style.opacity = "1"
-
-                let cardList = e.target.closest('.cards-list')
-                if(cardList) {
-                    let wrapper = cardList.querySelector('.card-wrapper')
-                    let progress = wrapper.id
-                    this.$store.commit('data/setProjectProgress', {index:card_id, progress: progress})
-                }
-            }
-
-        }
-    }
+    },
+};
 </script>
 
 <style lang="sass">

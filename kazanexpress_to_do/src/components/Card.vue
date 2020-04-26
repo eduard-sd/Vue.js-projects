@@ -71,7 +71,7 @@
                             <button
                                     class="btn btn--send"
                                     @click="sendCardSwitcher(project.id)"
-                                    title="Отправить задачу"
+                                    title="Отправить тикет"
                             >
                             </button>
                         </div>
@@ -109,191 +109,189 @@
 </template>
 
 <script>
-    import TaskList from '@/components/TaskList'
+import TaskList from '@/components/TaskList';
 
-    import {mapState, mapGetters} from 'vuex'
+import { mapState, mapGetters } from 'vuex';
 
-    export default {
-        name: "Card",
-        components: {
-            TaskList
+export default {
+    name: 'Card',
+    components: {
+        TaskList,
+    },
+    props: {
+        value: {
+            type: String,
+            require: true,
         },
-        props: {
-            value: {
-                type: String,
-                require: true
-            },
-            searchText: {
-                type: String,
-                require: false
-            },
-            connection: BroadcastChannel
-
+        searchText: {
+            type: String,
+            require: false,
         },
-        data() {
-            return {
-                newProjectName: [],
-                projectInFocus: [],
-                items: null,
-                targetProjectName: '',
-                exist: false,
-                hasError: false
+        connection: BroadcastChannel,
+
+    },
+    data() {
+        return {
+            newProjectName: [],
+            projectInFocus: [],
+            items: null,
+            targetProjectName: '',
+            exist: false,
+            hasError: false,
+        };
+    },
+    watch: {
+        targetProjectName() {
+            const env = this.getEnvironmentList;
+            const check = env.includes(this.targetProjectName);
+            if (check && this.targetProjectName.length > 0) {
+                this.exist = true;
+                this.hasError = false;
+            } else if (!check && this.targetProjectName.length > 0) {
+                this.hasError = true;
+                this.exist = false;
+            } else {
+                this.exist = false;
+                this.hasError = false;
             }
         },
-        watch: {
-            targetProjectName() {
-                let env = this.getEnvironmentList
-                let check = env.includes(this.targetProjectName)
-                if (check && this.targetProjectName.length > 0) {
-                    this.exist = true
-                    this.hasError = false
-                } else if (!check && this.targetProjectName.length > 0) {
-                    this.hasError = true
-                    this.exist = false
-                } else {
-                    this.exist = false
-                    this.hasError = false
-                }
+    },
+    computed: {
+        ...mapState('data', ['projectList', 'deleteProject']),
+        ...mapGetters('data', [
+            'getProjectIndexById',
+            'getProjectTaskList',
+            'getProjectProgressList',
+            'getProjectProgressLength',
+            'getProjectTitle',
+            'getProjectLength',
+            'getProjectTaskListLength',
+            'getEnvironmentList',
+            'getProjectByIndex',
+        ]),
+    },
+    methods: {
+        getTaskList(project) {
+            const index = this.getProjectIndexById(project);
+            return this.getProjectTaskList(index);
+        },
+
+        setProjectInWork(id) {
+            const index = this.getProjectIndexById(id);
+            this.$store.commit('data/setProjectInWork', { index });
+        },
+
+        setProjectDone(id) {
+            const index = this.getProjectIndexById(id);
+            this.$store.commit('data/setProjectDone', { index });
+        },
+
+        softDelete(id) {
+            const index = this.getProjectIndexById(id);
+            if (this.projectList[index].progress === 'Архив') {
+                this.$store.commit('data/deleteProject', { index });
+            } else {
+                this.$store.commit('data/setProjectInArchive', { index });
             }
         },
-        computed: {
-            ...mapState('data', ['projectList','deleteProject']),
-            ...mapGetters('data', [
-                'getProjectIndexById',
-                'getProjectTaskList',
-                'getProjectProgressList',
-                'getProjectProgressLength',
-                'getProjectTitle',
-                'getProjectLength',
-                'getProjectTaskListLength',
-                'getEnvironmentList',
-                'getProjectByIndex'
-            ])
-        },
-        methods: {
-            getTaskList(project){
-                let index = this.getProjectIndexById(project)
-                return this.getProjectTaskList(index)
-            },
 
-            setProjectInWork(id) {
-                let index = this.getProjectIndexById(id);
-                this.$store.commit('data/setProjectInWork', {index})
-            },
+        editProjectTitleToggle(id) {
+            const index = this.getProjectIndexById(id);
+            this.newProjectName[index] = this.getProjectTitle(index);
+            this.$store.commit('data/editProjectTitleToggle', { index });
 
-            setProjectDone(id) {
-                let index = this.getProjectIndexById(id);
-                this.$store.commit('data/setProjectDone', {index})
-            },
-
-            softDelete(id) {
-                let index = this.getProjectIndexById(id);
-                if(this.projectList[index].progress === 'Архив') {
-                    this.$store.commit('data/deleteProject', {index})
-                } else {
-                    this.$store.commit('data/setProjectInArchive', {index})
-                }
-            },
-
-            editProjectTitleToggle(id) {
-                let index = this.getProjectIndexById(id);
-                this.newProjectName[index] = this.getProjectTitle(index)
-                this.$store.commit('data/editProjectTitleToggle', {index})
-
-                if(this.projectInFocus.length === 0) {
-                    this.$nextTick(() => this.$refs.project[0].focus())
-                } else {
-                    this.projectInFocus[index] = this.$refs.project.length
-                    this.$nextTick(() => this.$refs.project[this.projectInFocus[index]].focus())
-                }
-            },
-
-
-            setProjectTitle(id) {
-                let index = this.getProjectIndexById(id);
-                let newName = {
-                    title: this.newProjectName[index] ? this.newProjectName[index].trim() : 'Без имени',
-                    index
-                }
-                this.$store.commit('data/setProjectTitle', newName)
-                this.$store.commit('data/editProjectTitleToggle', {index})
-            },
-
-            filteredList() {
-                let progressList = this.getProjectProgressList(this.value)
-
-                if (progressList && this.searchText) {
-                    return progressList.filter(project => {
-                        const title = project.title.toLowerCase()
-                        const result = title.includes(this.searchText ? this.searchText.toLowerCase() : '')
-                        this.items = result.length
-                        return result
-                    })
-                } else if (progressList && !this.searchText) {
-                    this.items = progressList.length
-                    return progressList
-                } else {
-                    this.items = 0
-                    return []
-                }
-            },
-
-            dragStart(e) {
-                const target = e.target;
-                e.dataTransfer.setData("card_id", target.id);
-
-                setTimeout(() => {
-                    target.style.opacity = "0.5";
-                }, 0);
-
-            },
-
-            sendCardSwitcher(id) {
-                let index = this.getProjectIndexById(id)
-                this.$store.commit('data/editSenderEditToggle', {index})
-                this.targetProjectName = ""
-            },
-
-            sendOriginCard(id) {
-                if(!this.exist) {
-                    alert("Введите название проекта")
-                    return
-                }
-                this.sendCard(id)
-                let index = this.getProjectIndexById(id)
-                this.$store.commit('data/deleteProject',{index:index})
-
-                this.targetProjectName = ""
-                alert("Оригинал отправлен")
-            },
-
-            sendCopyCard(id) {
-                if(!this.exist) {
-                    alert("Введите название проекта")
-                    return
-                }
-                this.sendCard(id)
-
-                this.targetProjectName = ""
-                alert("Копия отправлена")
-            },
-
-            sendCard(id) {
-                let index = this.getProjectIndexById(id)
-                let targetCard = this.getProjectByIndex(index)
-                let sendigCard = {
-                    title: targetCard.title,
-                    tasksList: targetCard.tasksList,
-                    progress: targetCard.progress
-                }
-
-                this.connection.postMessage({
-                    action: 'add-task',
-                    card: JSON.stringify(sendigCard),
-                })
+            if (this.projectInFocus.length === 0) {
+                this.$nextTick(() => this.$refs.project[0].focus());
+            } else {
+                this.projectInFocus[index] = this.$refs.project.length;
+                this.$nextTick(() => this.$refs.project[this.projectInFocus[index]].focus());
             }
-        }
-    }
+        },
+
+
+        setProjectTitle(id) {
+            const index = this.getProjectIndexById(id);
+            const newName = {
+                title: this.newProjectName[index] ? this.newProjectName[index].trim() : 'Без имени',
+                index,
+            };
+            this.$store.commit('data/setProjectTitle', newName);
+            this.$store.commit('data/editProjectTitleToggle', { index });
+        },
+
+        filteredList() {
+            const progressList = this.getProjectProgressList(this.value);
+
+            if (progressList && this.searchText) {
+                return progressList.filter((project) => {
+                    const title = project.title.toLowerCase();
+                    const result = title.includes(this.searchText ? this.searchText.toLowerCase() : '');
+                    this.items = result.length;
+                    return result;
+                });
+            } if (progressList && !this.searchText) {
+                this.items = progressList.length;
+                return progressList;
+            }
+            this.items = 0;
+            return [];
+        },
+
+        dragStart(e) {
+            const { target } = e;
+            e.dataTransfer.setData('card_id', target.id);
+
+            setTimeout(() => {
+                target.style.opacity = '0.5';
+            }, 0);
+        },
+
+        sendCardSwitcher(id) {
+            const index = this.getProjectIndexById(id);
+            this.$store.commit('data/editSenderEditToggle', { index });
+            this.targetProjectName = '';
+        },
+
+        sendOriginCard(id) {
+            if (!this.exist) {
+                alert('Введите название проекта');
+                return;
+            }
+            this.sendCard(id);
+            const index = this.getProjectIndexById(id);
+            this.$store.commit('data/deleteProject', { index });
+
+            this.targetProjectName = '';
+            alert('Оригинал отправлен');
+        },
+
+        sendCopyCard(id) {
+            if (!this.exist) {
+                alert('Введите название проекта');
+                return;
+            }
+            this.sendCard(id);
+
+            this.targetProjectName = '';
+            alert('Копия отправлена');
+        },
+
+        sendCard(id) {
+            const index = this.getProjectIndexById(id);
+            const targetCard = this.getProjectByIndex(index);
+            const sendigCard = {
+                title: targetCard.title,
+                tasksList: targetCard.tasksList,
+                progress: targetCard.progress,
+            };
+
+            this.connection.postMessage({
+                action: 'add-task',
+                card: JSON.stringify(sendigCard),
+            });
+        },
+    },
+};
 </script>
 
 <style scoped lang="sass">

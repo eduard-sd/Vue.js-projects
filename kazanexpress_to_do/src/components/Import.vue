@@ -15,24 +15,24 @@
 </template>
 
 <script>
-    export default {
-        name: "Import",
-        data() {
-            return {
-                newProjectName: [],
-                projectInFocus: []
-            }
-        },
-        methods:{
-            importFile(ev) {
-                const file = ev.target.files[0];
-                const reader = new FileReader();
+export default {
+    name: 'Import',
+    data() {
+        return {
+            newProjectName: [],
+            projectInFocus: [],
+        };
+    },
+    methods: {
+        importFile(ev) {
+            const file = ev.target.files[0];
+            const reader = new FileReader();
 
-                reader.onload = e => this.$emit("load", e.target.result);
-                reader.readAsText(file);
-            }
-        }
-    }
+            reader.onload = (e) => this.$emit('load', e.target.result);
+            reader.readAsText(file);
+        },
+    },
+};
 </script>
 
 <style scoped>

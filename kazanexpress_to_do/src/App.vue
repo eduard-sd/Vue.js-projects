@@ -5,13 +5,13 @@
 </template>
 
 <script>
-  export default {
+export default {
     name: 'App',
 
-    beforeCreate: function () {
-      this.$store.commit('data/initialiseStore')
-    }
-  }
+    beforeCreate() {
+        this.$store.commit('data/initialiseStore');
+    },
+};
 </script>
 
 <style>

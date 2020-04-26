@@ -22,211 +22,191 @@ const state = {
         new: [],
         in_work: [],
         ready: [],
-        archive: []
+        archive: [],
     },
-    environmentList: []
+    environmentList: [],
 };
 
 const mutations = {
     initialiseStore(state) {
-        if(sessionStorage.getItem('store')) {
+        if (sessionStorage.getItem('store')) {
             this.replaceState(
                 {
                     ...state,
-                    ...JSON.parse(sessionStorage.getItem('store'))
-                }
+                    ...JSON.parse(sessionStorage.getItem('store')),
+                },
             );
         }
     },
 
-    loadFileToStore(state,payload) {
-            this.replaceState(
-                {
-                    ...state,
-                    ...JSON.parse(payload.file)
-                }
-            );
+    loadFileToStore(state, payload) {
+        this.replaceState(
+            {
+                ...state,
+                ...JSON.parse(payload.file),
+            },
+        );
     },
 
     setLastProjectId(state) {
-        state.lastProjectId += 1
+        state.lastProjectId += 1;
     },
 
     setProjects(state, payload) {
-        state.projectList = payload
+        state.projectList = payload;
     },
 
     editProjectTitleToggle(state, payload) {
-        state.projectList[payload.index].titleEdit = !state.projectList[payload.index].titleEdit
+        state.projectList[payload.index].titleEdit = !state.projectList[payload.index].titleEdit;
     },
 
     setProjectTitle(state, payload) {
-        state.projectList[payload.index].title = payload.title
+        state.projectList[payload.index].title = payload.title;
     },
 
     setMainTitle(state, payload) {
-        state.mainTitle = payload.mainTitle
+        state.mainTitle = payload.mainTitle;
     },
 
     setEmptyProjectTitle(state, payload) {
-        state.projectList[payload.index].title = ''
+        state.projectList[payload.index].title = '';
     },
 
     addNewProject(state, payload) {
-        state.projectList.push(payload)
+        state.projectList.push(payload);
     },
 
     setProjectInWork(state, payload) {
-        state.projectList[payload.index].progress = 'В работе'
+        state.projectList[payload.index].progress = 'В работе';
     },
 
     setProjectDone(state, payload) {
-        state.projectList[payload.index].progress = 'Готово'
+        state.projectList[payload.index].progress = 'Готово';
     },
 
     setProjectProgress(state, payload) {
-        state.projectList[payload.index].progress = payload.progress
+        state.projectList[payload.index].progress = payload.progress;
     },
 
     deleteProject(state, payload) {
-        state.projectList.splice(payload.index, 1)
+        state.projectList.splice(payload.index, 1);
     },
 
     setProjectInArchive(state, payload) {
-        state.projectList[payload.index].progress = 'Архив'
+        state.projectList[payload.index].progress = 'Архив';
     },
 
 
     editProjectTaskToggle(state, payload) {
-        state.projectList[payload.index].tasksList[payload.taskIndex].textEdit = !state.projectList[payload.index].tasksList[payload.taskIndex].textEdit
+        state.projectList[payload.index].tasksList[payload.taskIndex].textEdit = !state.projectList[payload.index].tasksList[payload.taskIndex].textEdit;
     },
 
     editProjectTask(state, payload) {
-        state.projectList[payload.index].tasksList[payload.taskIndex].text = payload.newText
+        state.projectList[payload.index].tasksList[payload.taskIndex].text = payload.newText;
     },
 
     setEmptyTaskText(state, payload) {
-        state.projectList[payload.index].tasksList[payload.taskIndex].text = ''
+        state.projectList[payload.index].tasksList[payload.taskIndex].text = '';
     },
 
     addNewTask(state, payload) {
-        state.projectList[payload.index].tasksList.push(payload.task)
+        state.projectList[payload.index].tasksList.push(payload.task);
     },
 
     setTaskDone(state, payload) {
-        state.projectList[payload.index].tasksList[payload.taskIndex].isDone = true
+        state.projectList[payload.index].tasksList[payload.taskIndex].isDone = true;
     },
 
     setTaskNotDone(state, payload) {
-        state.projectList[payload.index].tasksList[payload.taskIndex].isDone = false
+        state.projectList[payload.index].tasksList[payload.taskIndex].isDone = false;
     },
 
     deleteTask(state, payload) {
-        state.projectList[payload.index].tasksList.splice(payload.taskIndex, 1)
+        state.projectList[payload.index].tasksList.splice(payload.taskIndex, 1);
     },
 
     addNewColumnSearch(state, payload) {
-        state.searchHistory[payload.list].push(payload.word)
+        state.searchHistory[payload.list].push(payload.word);
     },
 
     addEnviromentItem(state, payload) {
-        state.environmentList.push(payload.name)
+        state.environmentList.push(payload.name);
     },
 
     addEnviromentItemByIndex(state, payload) {
-        state.environmentList[payload.index] = payload.name
+        state.environmentList[payload.index] = payload.name;
     },
 
     editSenderEditToggle(state, payload) {
-        state.projectList[payload.index].senderEdit = !state.projectList[payload.index].senderEdit
+        state.projectList[payload.index].senderEdit = !state.projectList[payload.index].senderEdit;
     },
-}
+};
 
 const getters = {
     getLastProjectId(state) {
-      return state.lastProjectId
+        return state.lastProjectId;
     },
 
-    getProjectIndexById: (state) => (id) => {
-        return state.projectList.findIndex(project => project.id === id)
-    },
+    getProjectIndexById: (state) => (id) => state.projectList.findIndex((project) => project.id === id),
 
-    getProjectByIndex: (state) => (index) => {
-        return state.projectList[index]
-    },
+    getProjectByIndex: (state) => (index) => state.projectList[index],
 
     getProjectLength(state) {
-        return state.projectList.length
+        return state.projectList.length;
     },
 
-    getProjectTitle:(state) => (index) => {
-        return state.projectList[index].title
-    },
+    getProjectTitle: (state) => (index) => state.projectList[index].title,
 
     getProjectProgressList(state) {
-        return keyword => state.projectList.filter( item => {
-          return item.progress === keyword
-        })
+        return (keyword) => state.projectList.filter((item) => item.progress === keyword);
     },
 
     getProjectProgressLength(state) {
-        return keyword => state.projectList.filter( item => {
-            return item.progress === keyword
-        }).length
+        return (keyword) => state.projectList.filter((item) => item.progress === keyword).length;
     },
 
-    getProjectTaskList:(state) => (index) => {
-        return state.projectList[index].tasksList
-    },
+    getProjectTaskList: (state) => (index) => state.projectList[index].tasksList,
 
     getMainTitle(state) {
-        return state.mainTitle
+        return state.mainTitle;
     },
 
-    getProjectTaskListLength:(state) => (index) => {
-        return state.projectList[index].tasksList.length
-    },
+    getProjectTaskListLength: (state) => (index) => state.projectList[index].tasksList.length,
 
-    getTaskText:(state) => (payload) => {
-        return state.projectList[payload.index].tasksList[payload.taskIndex].text
-    },
+    getTaskText: (state) => (payload) => state.projectList[payload.index].tasksList[payload.taskIndex].text,
 
-    getTaskTextToggle:(state) => (payload) => {
-        return state.projectList[payload.index].tasksList[payload.taskIndex].textEdit
-    },
+    getTaskTextToggle: (state) => (payload) => state.projectList[payload.index].tasksList[payload.taskIndex].textEdit,
 
-    getTaskIndexById: (state) => (payload) => {
-        return state.projectList[payload.index].tasksList.findIndex(task => task.id === payload.taskId)
-    },
+    getTaskIndexById: (state) => (payload) => state.projectList[payload.index].tasksList.findIndex((task) => task.id === payload.taskId),
 
     getSearchHistory(state) {
-        return state.searchHistory
+        return state.searchHistory;
     },
 
     getSearchListNew(state) {
-        return state.searchHistory.new.slice(-5)
+        return state.searchHistory.new.slice(-5);
     },
 
     getSearchListInWork(state) {
-        return state.searchHistory.in_work.slice(-5)
+        return state.searchHistory.in_work.slice(-5);
     },
 
     getSearchListReady(state) {
-        return state.searchHistory.ready.slice(-5)
+        return state.searchHistory.ready.slice(-5);
     },
 
     getSearchListArchive(state) {
-        return state.searchHistory.archive.slice(-5)
+        return state.searchHistory.archive.slice(-5);
     },
 
     getEnvironmentList(state) {
-        return state.environmentList
-    }
+        return state.environmentList;
+    },
 };
 
 export default {
     namespaced: true,
     state,
     getters,
-    mutations
-}
+    mutations,
+};

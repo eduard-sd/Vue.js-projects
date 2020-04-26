@@ -1,7 +1,7 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
+import Vue from 'vue';
+import VueRouter from 'vue-router';
 
-Vue.use(VueRouter)
+Vue.use(VueRouter);
 
 const router = new VueRouter({
     mode: 'history',
@@ -9,9 +9,9 @@ const router = new VueRouter({
         {
             name: 'todo-app',
             path: '/',
-            component: require('@/components/Board').default
+            component: require('@/components/Board').default,
         },
-    ]
+    ],
 });
 
 export default router;

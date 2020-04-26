@@ -95,86 +95,85 @@
 </template>
 
 <script>
-    import Card from '@/components/Card'
-    import SearchFilter from '@/components/SearchFilter'
-    import { bus } from '../store/bus.js'
-    import {mapState, mapGetters} from 'vuex'
+import Card from '@/components/Card';
+import SearchFilter from '@/components/SearchFilter';
+import { mapState, mapGetters } from 'vuex';
 
-    export default {
-        name: "CardsList",
-        components: {
-            Card,
-            SearchFilter
+export default {
+    name: 'CardsList',
+    components: {
+        Card,
+        SearchFilter,
+    },
+    props: {
+        value: {
+            type: String,
+            require: true,
         },
-        props: {
-            value: {
-                type: String,
-                require: true
-            },
-            index: Number,
-            connection: BroadcastChannel
+        index: Number,
+        connection: BroadcastChannel,
+    },
+    data() {
+        return {
+            newItem: false,
+            newTitleProject: null,
+            searchText: '',
+        };
+    },
+    computed: {
+        ...mapState('data', ['projectList']),
+        ...mapGetters('data', [
+            'getLastProjectId',
+            'getProjectProgressLength',
+            'getSearchListNew',
+            'getSearchListInWork',
+            'getSearchListReady',
+            'getSearchListArchive',
+            'getSearchHistory',
+        ]),
+    },
+    methods: {
+        searchTextUpdate(value) {
+            this.searchText = value;
         },
-        data() {
-            return {
-                newItem: false,
-                newTitleProject: null,
-                searchText: ''
+        showFields() {
+            this.newItem = !this.newItem;
+            if (this.newItem) this.$nextTick(() => this.$refs.list.focus());
+        },
+        addNewProject() {
+            const project = {
+                id: this.getLastProjectId,
+                title: this.newTitleProject !== null ? this.newTitleProject : 'Без имени',
+                titleEdit: true,
+                tasksList: [],
+                progress: 'Новые',
+                senderEdit: false,
+            };
+            this.$store.commit('data/addNewProject', project);
+            this.newTitleProject = null;
+            this.$store.commit('data/setLastProjectId');
+            this.showFields();
+        },
+        searchHistory() {
+            if (this.searchText) {
+                if (this.value === 'Новые') {
+                    this.$store.commit('data/addNewColumnSearch', { list: 'new', word: this.searchText });
+                } else if (this.value === 'В работе') {
+                    this.$store.commit('data/addNewColumnSearch', { list: 'in_work', word: this.searchText });
+                } else if (this.value === 'Готово') {
+                    this.$store.commit('data/addNewColumnSearch', { list: 'ready', word: this.searchText });
+                } else if (this.value === 'Архив') {
+                    this.$store.commit('data/addNewColumnSearch', { list: 'archive', word: this.searchText });
+                }
             }
         },
-        computed: {
-            ...mapState('data', ['projectList']),
-            ...mapGetters('data', [
-                'getLastProjectId',
-                'getProjectProgressLength',
-                'getSearchListNew',
-                'getSearchListInWork',
-                'getSearchListReady',
-                'getSearchListArchive',
-                'getSearchHistory'
-            ]),
+        searchSettings(word) {
+            this.$emit('searchLast', { word });
         },
-        methods: {
-            searchTextUpdate(value) {
-                this.searchText = value
-            },
-            showFields() {
-                this.newItem = !this.newItem
-                if (this.newItem) this.$nextTick(() => this.$refs.list.focus())
-            },
-            addNewProject() {
-                let project = {
-                    id: this.getLastProjectId,
-                    title: this.newTitleProject !== null ? this.newTitleProject : "Без имени",
-                    titleEdit: true,
-                    tasksList: [],
-                    progress: 'Новые',
-                    senderEdit: false
-                }
-                this.$store.commit('data/addNewProject', project)
-                this.newTitleProject = null
-                this.$store.commit('data/setLastProjectId')
-                this.showFields()
-            },
-            searchHistory() {
-                if(this.searchText) {
-                    if(this.value === "Новые") {
-                        this.$store.commit('data/addNewColumnSearch', {list: 'new', word: this.searchText})
-                    } else if (this.value === "В работе") {
-                        this.$store.commit('data/addNewColumnSearch', {list: 'in_work', word: this.searchText})
-                    } else if (this.value === "Готово") {
-                        this.$store.commit('data/addNewColumnSearch', {list: 'ready', word: this.searchText})
-                    } else if (this.value === "Архив") {
-                        this.$store.commit('data/addNewColumnSearch', {list: 'archive', word: this.searchText})
-                    }
-                }
-            },
-            searchSettings(word) {
-                bus.$emit("searchLast", {word:word})
-            }
 
-        }
+    },
 
-    }
+};
 </script>
 
 <style lang="sass">

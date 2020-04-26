@@ -76,122 +76,122 @@
 </template>
 
 <script>
-    import { mapState, mapGetters } from 'vuex'
+import { mapState, mapGetters } from 'vuex';
 
-    export default {
-        name: "TaskList",
-        props: {
-            projectId: {
-                type: Number,
-                require: true
+export default {
+    name: 'TaskList',
+    props: {
+        projectId: {
+            type: Number,
+            require: true,
+        },
+    },
+    data() {
+        return {
+            newItem: false,
+            taskTextList: [],
+            taskInFocus: [],
+            newTask: null,
+        };
+    },
+    computed: {
+        ...mapState('data', ['projectList']),
+        ...mapGetters('data', ['getTaskText', 'getTaskTextToggle', 'getProjectTaskList', 'getProjectTaskListLength', 'getProjectIndexById', 'getTaskIndexById']),
+    },
+    methods: {
+        getTaskList() {
+            const index = this.getProjectIndexById(this.projectId);
+            return this.getProjectTaskList(index);
+        },
+
+        setTaskDone(id) {
+            const projectIndex = this.getProjectIndexById(this.projectId);
+            const taskTarget = {
+                index: projectIndex,
+                taskId: id,
+            };
+            const task = {
+                index: projectIndex,
+                taskIndex: this.getTaskIndexById(taskTarget),
+            };
+            this.$store.commit('data/setTaskDone', task);
+        },
+
+        setTaskNotDone(id) {
+            const projectIndex = this.getProjectIndexById(this.projectId);
+            const taskTarget = {
+                index: projectIndex,
+                taskId: id,
+            };
+            const task = {
+                index: projectIndex,
+                taskIndex: this.getTaskIndexById(taskTarget),
+            };
+            this.$store.commit('data/setTaskNotDone', task);
+        },
+
+        deleteTask(id) {
+            const projectIndex = this.getProjectIndexById(this.projectId);
+            const taskTarget = {
+                index: projectIndex,
+                taskId: id,
+            };
+
+            const task = {
+                index: projectIndex,
+                taskIndex: this.getTaskIndexById(taskTarget),
+            };
+            this.$store.commit('data/deleteTask', task);
+        },
+
+        showFields() {
+            this.newItem = !this.newItem;
+            if (this.newItem) this.$nextTick(() => this.$refs.task.focus());
+        },
+
+        editProjectTaskToggle(taskIndex) {
+            const task = {
+                index: this.getProjectIndexById(this.projectId),
+                taskIndex,
+            };
+            this.taskTextList[taskIndex] = this.getTaskText(task);
+            this.$store.commit('data/editProjectTaskToggle', task);
+
+            if (this.taskInFocus.length === 0) {
+                this.$nextTick(() => this.$refs.taskEdit[0].focus());
+            } else {
+                this.taskInFocus[taskIndex] = this.$refs.taskEdit.length;
+                this.$nextTick(() => this.$refs.taskEdit[this.taskInFocus[taskIndex]].focus());
             }
         },
-        data() {
-            return {
-                newItem: false,
-                taskTextList: [],
-                taskInFocus: [],
-                newTask: null
-            }
+
+        editProjectTask(taskIndex) {
+            const task = {
+                newText: this.taskTextList[taskIndex] ? this.taskTextList[taskIndex].trim() : 'Пусто',
+                index: this.getProjectIndexById(this.projectId),
+                taskIndex,
+            };
+            this.$store.commit('data/editProjectTask', task);
+            this.$store.commit('data/editProjectTaskToggle', task);
         },
-        computed: {
-            ...mapState('data', ['projectList']),
-            ...mapGetters('data', ['getTaskText', 'getTaskTextToggle', 'getProjectTaskList', 'getProjectTaskListLength', 'getProjectIndexById', 'getTaskIndexById'])
+
+        addNewTask() {
+            const index = this.getProjectIndexById(this.projectId);
+            const task = {
+                task: {
+                    id: this.projectList[index].tasksList.length,
+                    text: this.newTask ? this.newTask : 'Пусто',
+                    isDone: false,
+                    textEdit: true,
+                },
+                index,
+            };
+            this.$store.commit('data/addNewTask', task);
+            this.newTask = null;
+            this.showFields();
         },
-        methods: {
-            getTaskList(){
-                let index = this.getProjectIndexById(this.projectId)
-                return this.getProjectTaskList(index)
-            },
-
-            setTaskDone(id) {
-                let projectIndex = this.getProjectIndexById(this.projectId)
-                let taskTarget = {
-                    index: projectIndex,
-                    taskId: id
-                }
-                let task = {
-                    index: projectIndex,
-                    taskIndex: this.getTaskIndexById(taskTarget)
-                }
-                this.$store.commit('data/setTaskDone', task)
-            },
-
-            setTaskNotDone(id) {
-                let projectIndex = this.getProjectIndexById(this.projectId)
-                let taskTarget = {
-                    index: projectIndex,
-                    taskId: id
-                }
-                let task = {
-                    index: projectIndex,
-                    taskIndex: this.getTaskIndexById(taskTarget)
-                }
-                this.$store.commit('data/setTaskNotDone', task)
-            },
-
-            deleteTask(id) {
-                let projectIndex = this.getProjectIndexById(this.projectId)
-                let taskTarget = {
-                    index: projectIndex,
-                    taskId: id
-                }
-
-                let task = {
-                    index: projectIndex,
-                    taskIndex: this.getTaskIndexById(taskTarget)
-                }
-                this.$store.commit('data/deleteTask', task)
-            },
-
-            showFields() {
-                this.newItem = !this.newItem
-                if (this.newItem) this.$nextTick(() => this.$refs.task.focus())
-            },
-
-            editProjectTaskToggle(taskIndex){
-                let task = {
-                    index: this.getProjectIndexById(this.projectId),
-                    taskIndex
-                }
-                this.taskTextList[taskIndex] = this.getTaskText(task)
-                this.$store.commit('data/editProjectTaskToggle', task)
-
-                if(this.taskInFocus.length === 0) {
-                    this.$nextTick(() => this.$refs.taskEdit[0].focus())
-                } else {
-                    this.taskInFocus[taskIndex] = this.$refs.taskEdit.length
-                    this.$nextTick(() => this.$refs.taskEdit[this.taskInFocus[taskIndex]].focus())
-                }
-            },
-
-            editProjectTask(taskIndex) {
-                let task = {
-                    newText: this.taskTextList[taskIndex] ? this.taskTextList[taskIndex].trim() : "Пусто",
-                    index: this.getProjectIndexById(this.projectId),
-                    taskIndex
-                }
-                this.$store.commit('data/editProjectTask', task)
-                this.$store.commit('data/editProjectTaskToggle', task)
-            },
-
-            addNewTask() {
-                let index = this.getProjectIndexById(this.projectId)
-                let task = {
-                    task: {
-                        id: this.projectList[index].tasksList.length,
-                        text: this.newTask ? this.newTask : 'Пусто',
-                        isDone: false,
-                        textEdit: true
-                    },
-                    index
-                }
-                this.$store.commit('data/addNewTask', task)
-                this.newTask = null
-                this.showFields()
-            }
-        }
-    }
+    },
+};
 </script>
 
 <style lang="sass">
