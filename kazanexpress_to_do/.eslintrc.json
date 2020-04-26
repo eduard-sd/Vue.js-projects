@@ -24,6 +24,7 @@
             4
         ],
         "no-shadow": "off",
-        "import/no-unresolved": "off"
+        "import/no-unresolved": "off",
+        "no-param-reassign": [2, {"props": false}]
     }
 }
