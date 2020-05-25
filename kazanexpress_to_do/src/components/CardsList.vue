@@ -9,8 +9,8 @@
                     class="search"
                     @searchText="searchTextUpdate"
                     @searchBlur="searchHistory()"
-                    @searchFieldIndex = "searchFieldIndex()"
                     :index="index"
+                    :columnNameConvector="columnNameConvector()"
             />
             <ul class="search-history"
                 v-if="value === 'Новые'"
@@ -72,13 +72,13 @@
             <span class="btn btn--add"
                   @click="showFields"
             >
-                Добавить еще одну карточку
+                Добавить еще одну группу
             </span>
             </div>
             <div v-else-if="newItem" class="" >
             <textarea
                     v-model="newTitleProject"
-                    @blur="addNewProject"
+                    @blur="addNewProject()"
                     class="cards-list__text-field"
                     type="text"
                     placeholder="Заголовок для этой карточки"
@@ -148,6 +148,7 @@ export default {
                 tasksList: [],
                 progress: 'Новые',
                 senderEdit: false,
+                taskSearchFilter: false,
             };
             this.$store.commit('data/addNewProject', project);
             this.newTitleProject = null;
@@ -156,21 +157,29 @@ export default {
         },
         searchHistory() {
             if (this.searchText) {
-                if (this.value === 'Новые') {
-                    this.$store.commit('data/addNewColumnSearch', { list: 'new', word: this.searchText });
-                } else if (this.value === 'В работе') {
-                    this.$store.commit('data/addNewColumnSearch', { list: 'in_work', word: this.searchText });
-                } else if (this.value === 'Готово') {
-                    this.$store.commit('data/addNewColumnSearch', { list: 'ready', word: this.searchText });
-                } else if (this.value === 'Архив') {
-                    this.$store.commit('data/addNewColumnSearch', { list: 'archive', word: this.searchText });
-                }
+                this.$store.commit('data/addNewColumnSearch', {
+                    columnList: this.columnNameConvector(),
+                    word: this.searchText,
+                });
             }
         },
         searchSettings(word) {
             this.$emit('searchLast', { word });
         },
 
+        columnNameConvector() {
+            let valueConverted = '';
+            if (this.value === 'Новые') {
+                valueConverted = 'new';
+            } if (this.value === 'В работе') {
+                valueConverted = 'in_work';
+            } if (this.value === 'Готово') {
+                valueConverted = 'ready';
+            } if (this.value === 'Архив') {
+                valueConverted = 'archive';
+            }
+            return valueConverted;
+        },
     },
 
 };

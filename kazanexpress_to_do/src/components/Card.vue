@@ -16,13 +16,13 @@
                     <div v-if="project.senderEdit"
                          class="card-title__view-block card-title__view-block--resend-card"
                     >
-                        <h4>Поделиться задачей</h4>
+                        <h4>Поделиться группой</h4>
                         <div class="resend-block">
                             <input
                                     type="text"
                                     :class="{green: exist, red: hasError}"
                                     v-model="targetProjectName"
-                                    placeholder="Найти проект для отправки"
+                                    placeholder="Найти проект"
                             >
                             <div class="resend-block__controls">
                                 <button
@@ -47,10 +47,12 @@
                     <div v-else
                          class="card-title__view-block"
                     >
-                        <h3 @click="editProjectTitleToggle(project.id)">
-                            Тикет:<br>
-                            {{ project.title }}
-                        </h3>
+                        <span>
+                            <p>Группа:<br></p>
+                            <h3 @click="editProjectTitleToggle(project.id)">
+                                {{ project.title }}
+                            </h3>
+                        </span>
                         <div class="card-title__controls">
                             <button
                                     class="btn btn--not-done"
@@ -71,7 +73,7 @@
                             <button
                                     class="btn btn--send"
                                     @click="sendCardSwitcher(project.id)"
-                                    title="Отправить тикет"
+                                    title="Отправить тикет в другой проект"
                             >
                             </button>
                         </div>
@@ -97,11 +99,42 @@
             <div class="card__task-list">
                 <div class="task-title">
                     <h4>Задач: {{ getTaskList(project.id).length }}</h4>
+                    <div class="task-title__status">
+                        <label class="tasks-in-work">
+                            <input
+                                    class="visually-hidden"
+                                    :id="'in-work'+project.id"
+                                    type="radio"
+                                    :value="false"
+                                    v-model="taskSearchFilter"
+                            >
+                            <span
+                                    :class="{ 'filter-selected': taskSearchFilter===false }"
+                            >В работе</span>
+                        </label>
+
+                        <span>|</span>
+
+                        <label class="tasks-done">
+                            <input
+                                    class="visually-hidden"
+                                    :id="'done'+project.id"
+                                    type="radio"
+                                    :value="true"
+                                    v-model="taskSearchFilter"
+                            >
+                            <span
+                                    :class="{ 'filter-selected': taskSearchFilter!==false}"
+                            >Готово</span>
+                        </label>
+                    </div>
                 </div>
                 <ul>
                     <task-list
                             :index="filteredIndex"
-                            :projectId="project.id" />
+                            :projectId="project.id"
+                            :taskSearchFilter="taskSearchFilter"
+                    />
                 </ul>
             </div>
         </li>
@@ -111,7 +144,7 @@
 <script>
 import TaskList from '@/components/TaskList';
 
-import { mapState, mapGetters } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 
 export default {
     name: 'Card',
@@ -128,7 +161,6 @@ export default {
             require: false,
         },
         connection: BroadcastChannel,
-
     },
     data() {
         return {
@@ -138,6 +170,7 @@ export default {
             targetProjectName: '',
             exist: false,
             hasError: false,
+            taskSearchFilter: false,
         };
     },
     watch: {
@@ -157,7 +190,7 @@ export default {
         },
     },
     computed: {
-        ...mapState('data', ['projectList', 'deleteProject']),
+        ...mapState('data', ['searchFilters', 'projectList', 'deleteProject']),
         ...mapGetters('data', [
             'getProjectIndexById',
             'getProjectTaskList',
@@ -168,6 +201,12 @@ export default {
             'getProjectTaskListLength',
             'getEnvironmentList',
             'getProjectByIndex',
+            'getModalAnswer',
+            'getColumnSearchFilters',
+            'getColumnSearchFiltersNew',
+            'getColumnSearchFiltersInWork',
+            'getColumnSearchFiltersReady',
+            'getColumnSearchFiltersArchive',
         ]),
     },
     methods: {
@@ -189,7 +228,13 @@ export default {
         softDelete(id) {
             const index = this.getProjectIndexById(id);
             if (this.projectList[index].progress === 'Архив') {
-                this.$store.commit('data/deleteProject', { index });
+                const projectTitle = this.getProjectTitle(index);
+                this.$store.commit('data/setModal',
+                    {
+                        title: projectTitle,
+                        targetList: 'projectList',
+                        projectListIndex: index,
+                    });
             } else {
                 this.$store.commit('data/setProjectInArchive', { index });
             }
@@ -208,7 +253,6 @@ export default {
             }
         },
 
-
         setProjectTitle(id) {
             const index = this.getProjectIndexById(id);
             const newName = {
@@ -222,14 +266,51 @@ export default {
         filteredList() {
             const progressList = this.getProjectProgressList(this.value);
 
+            const filterListInColumn = this.columnNameConvector();
             if (progressList && this.searchText) {
-                return progressList.filter((project) => {
+                if (filterListInColumn.includes('groups')
+                    && !filterListInColumn.includes('all')
+                    && !filterListInColumn.includes('tasks')
+                ) {
+                    return progressList.filter((project) => {
+                        const title = project.title.toLowerCase();
+                        const result = title.includes(this.searchText ? this.searchText.toLowerCase() : '');
+                        this.items = result.length;
+                        return result;
+                    });
+                }
+                if (!filterListInColumn.includes('groups')
+                     && !filterListInColumn.includes('all')
+                     && filterListInColumn.includes('tasks')
+                ) {
+                    // eslint-disable-next-line max-len,array-callback-return,consistent-return
+                    return progressList.filter((project) => {
+                        const tasks = project.tasksList.filter((task) => {
+                            const text = task.text.toLowerCase();
+                            return text.includes(this.searchText ? this.searchText.toLowerCase() : '');
+                        });
+                        if (tasks.length > 0) return true;
+                    });
+                }
+                const searchInGroups = progressList.filter((project) => {
                     const title = project.title.toLowerCase();
                     const result = title.includes(this.searchText ? this.searchText.toLowerCase() : '');
                     this.items = result.length;
                     return result;
                 });
-            } if (progressList && !this.searchText) {
+
+                // eslint-disable-next-line array-callback-return,consistent-return
+                const searchInTask = progressList.filter((project) => {
+                    const tasks = project.tasksList.filter((task) => {
+                        const text = task.text.toLowerCase();
+                        return text.includes(this.searchText ? this.searchText.toLowerCase() : '');
+                    });
+                    if (tasks.length > 0) return true;
+                });
+                const mix = searchInGroups.concat(searchInTask);
+                return [...new Set(mix)];
+            }
+            if (progressList && !this.searchText) {
                 this.items = progressList.length;
                 return progressList;
             }
@@ -241,9 +322,9 @@ export default {
             const { target } = e;
             e.dataTransfer.setData('card_id', target.id);
 
-            setTimeout(() => {
+            this.$nextTick(() => {
                 target.style.opacity = '0.5';
-            }, 0);
+            });
         },
 
         sendCardSwitcher(id) {
@@ -290,6 +371,26 @@ export default {
                 card: JSON.stringify(sendigCard),
             });
         },
+
+        columnNameConvector() {
+            let valueConverted = null;
+            if (this.value === 'Новые') {
+                valueConverted = this.getColumnSearchFiltersNew;
+            } if (this.value === 'В работе') {
+                valueConverted = this.getColumnSearchFiltersInWork;
+            } if (this.value === 'Готово') {
+                valueConverted = this.getColumnSearchFiltersReady;
+            } if (this.value === 'Архив') {
+                valueConverted = this.getColumnSearchFiltersArchive;
+            }
+            return valueConverted;
+        },
+        taskFilter(id) {
+            this.$store.commit('data/setTaskSearchFilter', {
+                index: this.getProjectIndexById(id),
+                filterList: this.taskSearchFilter,
+            });
+        },
     },
 };
 </script>
@@ -329,22 +430,30 @@ export default {
             display: flex
             align-items: center
 
-    .resend-block
+    .task-title
         display: flex
         flex-direction: row
+        align-items: center
         justify-content: space-between
-        &____controls
-            display: flex
-            flex-direction: row
 
-    .red
-        outline: none
-        border-color: red
-        &:focus
-            border-color: red
-    .green
-        outline: none
-        border-color: #1ccc25
-        &:focus
-            border-color: #1ccc25
+        .task-title__status
+            right: 5px
+            font-size: 10px
+            line-height: 16px
+            width: 100px
+            display: flex
+            justify-content: space-around
+            margin: 0 0 8px
+            text-align: center
+
+        .tasks-done,
+        .tasks-in-work
+            &:hover
+                font-weight: bold
+                cursor: pointer
+            &:checked
+                font-weight: bold
+    .filter-selected
+        font-weight: bold
+        text-decoration: underline
 </style>

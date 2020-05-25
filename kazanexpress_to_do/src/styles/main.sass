@@ -6,7 +6,8 @@ ul, p
   padding: 0
 
 p
-  margin: 0
+  font-weight: 400
+  margin: 0 0 8px
 
 h1
   font-size: 24px
@@ -33,6 +34,7 @@ textarea
 .btn
   cursor: pointer
   border-radius: 25px
+  outline: none
 
   &--add
     width: 100%
@@ -48,7 +50,9 @@ textarea
       font-weight: bold
 
   &--save,
-  &--upload
+  &--upload,
+  &--remove,
+  &--cancel
     background-color: #5aac44
     box-shadow: none
     border: none
@@ -67,11 +71,29 @@ textarea
       box-shadow: none
       border: none
       color: #fff
+    &:focus
+      box-shadow: 0 0 10px 0 #61bd4f
 
   &--upload
     background-color: rgba(155, 150, 7, 0.51)
     &:hover
       background-color: #e5e007
+    &:focus
+      box-shadow: 0 0 10px 0 #e5e007
+
+  &--remove
+    background-color: rgba(114, 8, 21, 0.51)
+    &:hover
+      background-color: #e5415e
+    &:focus
+      box-shadow: 0 0 10px 0 #e5415e
+
+  &--cancel
+    background-color: #e5e1db
+    &:hover
+      background-color: rgba(155, 143, 124, 0.51)
+    &:focus
+      box-shadow: 0 0 10px 0 rgba(155, 143, 124, 0.51)
 
   &--search,
   &--title-add,
@@ -92,18 +114,24 @@ textarea
 
     &:hover
       background-color: #e5e007
+    &:focus
+      box-shadow: 0 0 10px 0 #e5e007
 
   &--delete
     background-color: rgba(155, 9, 2, 0.51)
 
     &:hover
       background-color: #ac1502
+    &:focus
+      box-shadow: 0 0 10px 0 #ac1502
 
   &--send
     background-color: rgba(50, 50, 54, 0.62)
 
     &:hover
       background-color: rgb(50, 50, 54)
+    &:focus
+      box-shadow: 0 0 10px 0 rgb(50, 50, 54)
 
   &--title-add,
   &--not-done,
@@ -112,6 +140,8 @@ textarea
 
     &:hover
       background-color: #1ccc25
+    &:focus
+      box-shadow: 0 0 10px 0 #1ccc25
 
 
 
@@ -123,7 +153,6 @@ textarea
     overflow: hidden
     overflow-wrap: break-word
     resize: none
-    height: 54px
     background: none
     border: none
     box-shadow: none
@@ -173,3 +202,29 @@ textarea
     &:hover
       cursor: pointer
       background-color: #bfc7ff
+
+
+.resend-block
+  display: flex
+  flex-direction: row
+  justify-content: space-between
+
+  input
+    flex: 1
+    width: 20%
+
+  .resend-block__controls
+    display: flex
+    flex-direction: row
+    margin-left: 5px
+
+  .red
+    outline: none
+    border-color: red
+    &:focus
+      border-color: red
+  .green
+    outline: none
+    border-color: #1ccc25
+    &:focus
+      border-color: #1ccc25

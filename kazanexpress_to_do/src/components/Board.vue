@@ -7,18 +7,21 @@
             <div v-if="!titleIsEditing"
                  class="project-title"
             >
-                <h1 @click="titleSwitcher()">
-                    Название проекта: {{ mainProjectTitle }}
-                </h1>
+                <span>Название проекта:</span>
+                <h1 @click="titleSwitcher()">{{ mainProjectTitle }}</h1>
             </div>
             <div v-else class="project-title project-title--input">
-                <input
-                        v-model="mainProjectTitle"
-                        type="text"
-                        placeholder="Ваш проект"
-                        ref="mainTitle"
-                        @blur="editMainTitle()"
-                >
+                <label for="projectTitle">
+                    <span>Название проекта: </span>
+                    <input
+                            id="projectTitle"
+                            v-model="mainProjectTitle"
+                            type="text"
+                            placeholder="Ваш проект"
+                            ref="mainTitle"
+                            @blur="editMainTitle()"
+                    >
+                </label>
                 <button
                         class="btn btn--title-add"
                         @click="editMainTitle()"
@@ -40,14 +43,17 @@
                     :connection="connection"
             />
         </div>
+        <modal v-if="getModalVisibility"></modal>
     </div>
 </template>
 
 <script>
+import { mapGetters } from 'vuex';
 import CardsList from '@/components/CardsList';
 import Import from '@/components/Import';
 import Export from '@/components/Export';
-import { mapGetters } from 'vuex';
+import Modal from '@/components/Modal.vue';
+
 
 export default {
     name: 'Board',
@@ -55,6 +61,7 @@ export default {
         CardsList,
         Import,
         Export,
+        Modal,
     },
 
     data() {
@@ -68,7 +75,7 @@ export default {
     },
 
     computed: {
-        ...mapGetters('data', ['getMainTitle', 'getLastProjectId', 'getEnvironmentList']),
+        ...mapGetters('data', ['getMainTitle', 'getLastProjectId', 'getEnvironmentList', 'getModalVisibility']),
     },
 
     created() {
@@ -121,9 +128,8 @@ export default {
             this.titleIsEditing = !this.titleIsEditing;
             if (this.mainProjectTitle.length === 0) this.titleIsEditing = true;
 
-            if (this.mainProjectTitle) {
+            if (this.mainProjectTitle && this.titleIsEditing === true) {
                 this.$nextTick(() => this.$refs.mainTitle.focus());
-                // this.$refs.mainTitle.focus();
             }
         },
 
@@ -176,8 +182,11 @@ export default {
         &__block
             display: flex
             justify-content: space-between
-            align-items: center
             width: 95%
+            align-items: flex-start
+
+        &__title
+            align-items: center
 
     .project-title
         padding: 20px
